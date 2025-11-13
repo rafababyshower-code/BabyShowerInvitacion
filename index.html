@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitacion Baby shower</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #fff2ea;
+        }
+        
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+        
+        .img-desktop {
+            display: block;
+        }
+        
+        .img-mobile {
+            display: none;
+        }
+
+        .button {
+            position: absolute;
+            bottom: 40px;
+            left: 43%;
+            width: 200px;
+            height: 50px;
+            background-color: #ffdada;
+            color: #b15f4a;
+            box-shadow: 0 20px 25px -5px #b15f4a;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+        
+        .button:hover {
+            background-color: #b15f4a;
+            color: #fff;
+            border: none;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        
+        .modal h2 {
+            color: #b15f4a;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .modal label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .modal input,
+        .modal select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        .modal input:focus,
+        .modal select:focus {
+            outline: none;
+            border-color: #b15f4a;
+        }
+        
+        .modal button[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background-color: #b15f4a;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .modal button[type="submit"]:hover {
+            background-color: #8d4a3a;
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+        
+        .close-modal:hover {
+            color: #b15f4a;
+        }
+        
+        .mensaje-confirmacion {
+            display: none;
+            text-align: center;
+            padding: 30px 20px;
+            background-color: #ffdada;
+            color: #ffffff;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px solid #b15f4a;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1001;
+            opacity: 1 !important;
+        }
+        
+        .mensaje-confirmacion.activo {
+            display: block;
+        }
+        
+        .mensaje-confirmacion h3 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            color: #b15f4a;
+            font-weight: 700;
+        }
+        
+        .mensaje-confirmacion p {
+            margin: 0;
+            font-size: 16px;
+            color: #b15f4a;
+        }
+        
+        .form-deshabilitado {
+            pointer-events: none;
+        }
+        
+        .form-deshabilitado input,
+        .form-deshabilitado select,
+        .form-deshabilitado button:not(.mensaje-confirmacion) {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .form-deshabilitado .mensaje-confirmacion {
+            opacity: 1 !important;
+            pointer-events: auto;
+        }
+        
+        .regalo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            border-left: 3px solid #b15f4a;
+        }
+        
+        .regalo-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .regalo-nombre {
+            flex: 1;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .regalo-eliminar {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .regalo-eliminar:hover {
+            background-color: #c82333;
+        }
+        
+        @media (max-width: 800px) {
+            .button {
+                bottom: 18%;
+                left: 40%;
+                width: 150px;
+                height: 30px;
+                font-size: 14px;
+            }
+            
+            .mensaje-confirmacion {
+                padding: 25px 15px;
+            }
+            
+            .mensaje-confirmacion h3 {
+                font-size: 20px;
+            }
+            
+            .mensaje-confirmacion p {
+                font-size: 14px;
+            }
+        }
+
+        /* Para pantallas móviles (hasta 450px) */
+        @media (max-width: 450px) {
+            .img-desktop {
+                display: none;
+            }
+            
+            .img-mobile {
+                display: block;
+            }
+            .button {
+                bottom: 17%;
+                left: 20%;
+                width: 150px;
+                height: 30px;
+                font-size: 14px;
+            }
+            
+            .mensaje-confirmacion {
+                padding: 20px 15px;
+                margin-top: 15px;
+            }
+            
+            .mensaje-confirmacion h3 {
+                font-size: 18px;
+            }
+            
+            .mensaje-confirmacion p {
+                font-size: 13px;
+            }
+        }
+    </style>
+    
+</head>
+<body>
+    <img src="invitacion.png" alt="Invitacion" class="img-desktop">
+    <img src="invitacion_mobile.png" alt="Invitacion" class="img-mobile">
+    <button class="button">Presiona aquí</button>
+    <div class="modal" id="modal">
+        <form class="modal-content" id="form">
+            <button class="close-modal" id="closeModal">&times;</button>
+            <h2>Confirmar asistencia</h2>
+            <label for="nombre">Nombre completo</label>
+            <input type="text" name="nombre" placeholder="Nombre completo" id="nombre" required>
+            <label for="regalo">Selecciona tu regalo</label>
+            <select id="regalo">
+                <option value="">Selecciona un regalo</option>
+            </select>
+            <div id="regalosSeleccionadosContainer" style="margin-top: 15px; display: none;">
+                <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #b15f4a;">Regalos seleccionados:</label>
+                <div id="regalosSeleccionadosLista" style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; border: 1px solid #ddd; max-height: 150px; overflow-y: auto;"></div>
+            </div>
+            <button type="submit">Confirmar</button>
+            <div class="mensaje-confirmacion" id="mensajeConfirmacion">
+                <h3>¡Confirmación exitosa!</h3>
+                <p>Tu asistencia y regalo han sido confirmados. Gracias por tu respuesta.</p>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const button = document.querySelector('.button');
+        const modal = document.getElementById('modal');
+        const closeModal = document.getElementById('closeModal');
+        
+        // Regalos directamente en el código
+        const regalos = [
+            { "id": 1, "nombre": "Body de manga corta (0-3 meses)" },
+            { "id": 2, "nombre": "Body de manga corta (3-6 meses)" },
+            { "id": 3, "nombre": "Body de manga larga (0-3 meses)" },
+            { "id": 4, "nombre": "Body de manga larga (3-6 meses)" },
+            { "id": 5, "nombre": "Pijama enterizo (0-3 meses)" },
+            { "id": 6, "nombre": "Pijama enterizo (3-6 meses)" },
+            { "id": 11, "nombre": "Suéter ligero (6-9 meses)" },
+            { "id": 12, "nombre": "Suéter ligero (9-12 meses)" },
+            { "id": 13, "nombre": "Gorrito para recién nacido" },
+            { "id": 14, "nombre": "Patucos o medias para bebé" },
+            { "id": 15, "nombre": "Guantes antifricción (recién nacido)" },
+            { "id": 16, "nombre": "Manta ligera para bebé" },
+            { "id": 19, "nombre": "Paquete de 2-3 bodys neutros (0-6 meses)" },
+            { "id": 20, "nombre": "Paquete de 2 pijamas neutros (6-12 meses)" },
+            { "id": 21, "nombre": "Colchoneta antifluidos" },
+            { "id": 22, "nombre": "Set de aseo bebé (cepillo, peine, cortaúñas)" },
+            { "id": 23, "nombre": "Champú y gel de baño sin fragancia" },
+            { "id": 24, "nombre": "Toalla con capucha bebé" },
+            { "id": 25, "nombre": "Paños suaves para baño (washcloths)" },
+            { "id": 26, "nombre": "Crema para el cambio de pañal" },
+            { "id": 27, "nombre": "Cojin de lactancia" },  
+            { "id": 28, "nombre": "Mini kit de primeros auxilios para bebé" },
+            { "id": 29, "nombre": "Kit de manicura bebé (uña y lima)" },
+            { "id": 30, "nombre": "Crema hidratante para bebé" },
+            { "id": 31, "nombre": "Termómetro para bebé" },
+            { "id": 32, "nombre": "Aspirador nasal bebé" },
+            { "id": 33, "nombre": "Biberón o botella de vidrio/acero" },
+            { "id": 34, "nombre": "Babero de silicona" },
+            { "id": 35, "nombre": "Ropa interior + pijama para mamá (postparto)" },
+            { "id": 36, "nombre": "Kit de aseo para mamá (cremas, toallas, etc.)" },
+            { "id": 37, "nombre": "Bata o kimono ligero para mamá" },
+            { "id": 38, "nombre": "Sujetadores de lactancia para mamá" },
+            { "id": 39, "nombre": "Vaso o botella reutilizable para mamá" },
+            { "id": 40, "nombre": "Bolso de cambio bebé + mamá" },
+            { "id": 41, "nombre": "Pijama mamá + bebé (juego combinado)" },
+            { "id": 42, "nombre": "Bodies con estampados neutros (0-6 meses)" },
+            { "id": 43, "nombre": "Aceite corporal para mamá (postparto)" },
+            { "id": 44, "nombre": "Toallitas íntimas para mamá" },
+            { "id": 45, "nombre": "Juguete de estimulacion temprana" },
+            { "id": 46, "nombre": "Organizador de ropa bebé" },
+            { "id": 47, "nombre": "Bolsa para ropa sucia del bebé" },
+            { "id": 48, "nombre": "Set de babitas o pañalitos de tela absorbentes" },
+            { "id": 49, "nombre": "Bodies para ocasión especial (0-3 meses)" },
+            { "id": 50, "nombre": "Bodies para ocasión especial (3-6 meses)" },
+            { "id": 51, "nombre": "Pijamas para ocasión especial (6-12 meses)" },
+            { "id": 52, "nombre": "Manta o chal especial para fotos" },
+            { "id": 53, "nombre": "Libro de hitos del bebé" },
+            { "id": 54, "nombre": "Álbum de fotos del bebé" },
+            { "id": 55, "nombre": "Gorro + bufanda bebé (meses fríos)" },
+            { "id": 56, "nombre": "Pantalones suaves o leggings bebé (6-12 meses)" },
+            { "id": 57, "nombre": "Camisetas neutras bebé (pack)" },
+            { "id": 58, "nombre": "Calcetines suaves bebé (pack)" },
+            { "id": 59, "nombre": "Baberos de tela lavable (pack)" },
+            { "id": 60, "nombre": "Cobija o swaddle ligera (muselina)" },
+            { "id": 61, "nombre": "Pijamas de algodón orgánico bebé" },
+            { "id": 62, "nombre": "Monitor o vigilabebés básico" },
+            { "id": 63, "nombre": "Luz de noche para cuarto del bebé" },
+            { "id": 64, "nombre": "Neceser o bolsa de pañales mamá-bebé" },
+            { "id": 65, "nombre": "Toallitas de aseo para mamá (mini kit)" },
+            { "id": 66, "nombre": "Set de cuidado bucal bebé (cepillo, pasta suave)" },
+            { "id": 67, "nombre": "Gorros de algodón (varios colores)" },
+            { "id": 68, "nombre": "Bodies con estampados neutros (9-12 meses)" },
+            { "id": 69, "nombre": "Ropa exterior ligera bebé (6-9 meses)" },
+            { "id": 70, "nombre": "Pijama tipo saco de dormir (6-12 meses)" },
+            { "id": 71, "nombre": "Detergente suave + bolsas para ropa bebé" },
+            { "id": 72, "nombre": "Pañales ecológicos o de tela (alternativa)" },
+            { "id": 73, "nombre": "Set de masaje para bebé (aceite + guía)" },
+            { "id": 74, "nombre": "Tarjeta de regalo para tienda de bebé o mamá" },
+            { "id": 75, "nombre": "Portachupete o cadena para chupete" },
+            { "id": 76, "nombre": "Set de cucharas y platos de silicona (inicio alimentación)" },
+            { "id": 77, "nombre": "Mordedera de silicona o tela suave" },
+            { "id": 78, "nombre": "Libro sensorial o de tela para bebé" }
+        ];
+        
+        let regalos_seleccionados = [];
+        
+        // Funciones para manejar IDs de regalos confirmados (solo para filtrado)
+        function obtenerIdsRegalosConfirmados() {
+            try {
+                const confirmados = localStorage.getItem('regalos_confirmados');
+                if (!confirmados) return [];
+                // Convertir todos los IDs a números para comparación correcta
+                const ids = JSON.parse(confirmados);
+                return ids.map(id => Number(id));
+            } catch (error) {
+                console.error('Error al obtener IDs de regalos confirmados:', error);
+                return [];
+            }
+        }
+        
+        function guardarIdsRegalosConfirmados(idsRegalos) {
+            try {
+                const confirmadosActuales = obtenerIdsRegalosConfirmados();
+                // Convertir todos los IDs a números y agregar los nuevos sin duplicados
+                const idsNumericos = idsRegalos.map(id => Number(id));
+                const nuevosConfirmados = [...new Set([...confirmadosActuales, ...idsNumericos])];
+                localStorage.setItem('regalos_confirmados', JSON.stringify(nuevosConfirmados));
+                console.log('IDs de regalos confirmados guardados:', nuevosConfirmados);
+            } catch (error) {
+                console.error('Error al guardar IDs de regalos confirmados:', error);
+            }
+        }
+        
+        // Funciones para manejar confirmaciones con nombres (regalo y persona)
+        // Estructura: [{nombreRegalo: "Body de manga corta", nombrePersona: "Juan Pérez"}, ...]
+        function obtenerConfirmaciones() {
+            try {
+                const confirmaciones = localStorage.getItem('confirmaciones');
+                if (!confirmaciones) return [];
+                return JSON.parse(confirmaciones);
+            } catch (error) {
+                console.error('Error al obtener confirmaciones:', error);
+                return [];
+            }
+        }
+        
+        function guardarConfirmaciones(nuevasConfirmaciones) {
+            try {
+                // nuevasConfirmaciones es un array de objetos: [{nombreRegalo: "...", nombrePersona: "..."}]
+                const confirmacionesActuales = obtenerConfirmaciones();
+                const todasConfirmaciones = [...confirmacionesActuales, ...nuevasConfirmaciones];
+                localStorage.setItem('confirmaciones', JSON.stringify(todasConfirmaciones));
+                console.log('Confirmaciones guardadas:', todasConfirmaciones);
+            } catch (error) {
+                console.error('Error al guardar confirmaciones:', error);
+            }
+        }
+        
+        // Función para obtener regalos disponibles (excluyendo los confirmados)
+        function obtenerRegalosDisponibles() {
+            const idsConfirmados = obtenerIdsRegalosConfirmados();
+            return regalos.filter(regalo => !idsConfirmados.includes(Number(regalo.id)));
+        }
+        
+        // Llenar el select con las opciones de regalos disponibles (excluyendo los ya seleccionados y confirmados)
+        function llenarSelectRegalos() {
+            const selectRegalo = document.getElementById('regalo');
+            if (!selectRegalo) {
+                console.error('No se encontró el elemento select con id "regalo"');
+                return;
+            }
+            
+            // Asegurar que el select esté habilitado
+            selectRegalo.disabled = false;
+            
+            // Obtener regalos disponibles (ya filtrados por confirmados desde localStorage)
+            const regalosDisponiblesBase = obtenerRegalosDisponibles();
+            
+            // Obtener IDs de regalos ya seleccionados en esta sesión
+            const idsSeleccionados = regalos_seleccionados.map(r => Number(r.id));
+            
+            // Filtrar también los seleccionados en esta sesión
+            const regalosDisponibles = regalosDisponiblesBase.filter(regalo => 
+                !idsSeleccionados.includes(Number(regalo.id))
+            );
+            
+            const idsConfirmados = obtenerIdsRegalosConfirmados();
+            console.log('IDs seleccionados en sesión:', idsSeleccionados);
+            console.log('IDs confirmados (localStorage):', idsConfirmados);
+            console.log('Regalos disponibles (sin confirmados):', regalosDisponiblesBase.length);
+            console.log('Regalos para mostrar (sin seleccionados en sesión):', regalosDisponibles.length);
+            
+            // Limpiar opciones existentes
+            selectRegalo.innerHTML = '<option value="">Selecciona un regalo</option>';
+            
+            if (regalosDisponibles.length === 0) {
+                const option = document.createElement('option');
+                option.value = "";
+                option.textContent = "No hay más regalos disponibles";
+                option.disabled = true;
+                selectRegalo.appendChild(option);
+                console.log('No hay más regalos disponibles');
+                return;
+            }
+            
+            regalosDisponibles.forEach((regalo) => {
+                const option = document.createElement('option');
+                option.value = regalo.id;
+                option.textContent = regalo.nombre;
+                selectRegalo.appendChild(option);
+            });
+            
+            console.log('Select llenado con', regalosDisponibles.length, 'regalos disponibles');
+        }
+        
+        // Función para mostrar los regalos seleccionados
+        function mostrarRegalosSeleccionados() {
+            const container = document.getElementById('regalosSeleccionadosContainer');
+            const lista = document.getElementById('regalosSeleccionadosLista');
+            
+            if (!container || !lista) return;
+            
+            if (regalos_seleccionados.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            lista.innerHTML = '';
+            
+            regalos_seleccionados.forEach((regalo, index) => {
+                const item = document.createElement('div');
+                item.className = 'regalo-item';
+                
+                const nombre = document.createElement('span');
+                nombre.className = 'regalo-nombre';
+                nombre.textContent = `${index + 1}. ${regalo.nombre}`;
+                
+                const eliminar = document.createElement('button');
+                eliminar.className = 'regalo-eliminar';
+                eliminar.textContent = 'Eliminar';
+                eliminar.type = 'button';
+                eliminar.addEventListener('click', function() {
+                    // Eliminar el regalo de la lista
+                    regalos_seleccionados.splice(index, 1);
+                    // Actualizar la visualización
+                    mostrarRegalosSeleccionados();
+                    // Actualizar el select para mostrar el regalo eliminado
+                    llenarSelectRegalos();
+                });
+                
+                item.appendChild(nombre);
+                item.appendChild(eliminar);
+                lista.appendChild(item);
+            });
+        }
+        
+        // Variable para evitar agregar múltiples event listeners
+        let seleccionRegaloConfigurado = false;
+        
+        // Manejar la selección de un regalo
+        function manejarSeleccionRegalo() {
+            const selectRegalo = document.getElementById('regalo');
+            if (!selectRegalo) return;
+            
+            // Evitar agregar múltiples event listeners
+            if (seleccionRegaloConfigurado) return;
+            seleccionRegaloConfigurado = true;
+            
+            selectRegalo.addEventListener('change', function() {
+                const regaloId = parseInt(this.value);
+                
+                if (regaloId && regaloId > 0) {
+                    // Buscar el regalo seleccionado
+                    const regaloSeleccionado = regalos.find(r => r.id === regaloId);
+                    
+                    if (regaloSeleccionado) {
+                        // Agregar a regalos_seleccionados si no está ya
+                        const yaExiste = regalos_seleccionados.some(r => r.id === regaloId);
+                        
+                        if (!yaExiste) {
+                            regalos_seleccionados.push(regaloSeleccionado);
+                            console.log('Regalo agregado:', regaloSeleccionado.nombre);
+                            console.log('Regalos seleccionados:', regalos_seleccionados.length);
+                            
+                            // Actualizar la visualización de regalos seleccionados
+                            mostrarRegalosSeleccionados();
+                            
+                            // Actualizar el select para ocultar el regalo seleccionado
+                            llenarSelectRegalos();
+                            
+                            // Resetear el select a la opción por defecto
+                            selectRegalo.value = "";
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Event listener para abrir el modal
+        button.addEventListener('click', function() {
+            modal.classList.add('active');
+            // Asegurar que el select esté habilitado
+            const selectRegalo = document.getElementById('regalo');
+            if (selectRegalo) {
+                selectRegalo.disabled = false;
+                // Actualizar el select cuando se abre el modal
+                llenarSelectRegalos();
+                // Mostrar regalos seleccionados si hay alguno
+                mostrarRegalosSeleccionados();
+            }
+        });
+        
+        closeModal.addEventListener('click', function() {
+            modal.classList.remove('active');
+        });
+        
+        // Cerrar modal al hacer clic fuera del contenido
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        });
+        
+        // Manejar el envío del formulario
+        const form = document.getElementById('form');
+        const mensajeConfirmacion = document.getElementById('mensajeConfirmacion');
+        const inputNombre = document.getElementById('nombre');
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevenir envío por defecto
+            
+            const nombre = inputNombre.value.trim();
+            
+            // Validar que haya nombre
+            if (!nombre) {
+                alert('Por favor, ingresa tu nombre completo');
+                return;
+            }
+            
+            // Validar que haya al menos un regalo seleccionado
+            if (regalos_seleccionados.length === 0) {
+                alert('Por favor, selecciona al menos un regalo');
+                return;
+            }
+            
+            // Preparar datos (solo para mostrar en consola)
+            const datos = {
+                nombre: nombre,
+                regalos: regalos_seleccionados.map(r => r.nombre).join(', '),
+                fecha: new Date().toLocaleString('es-ES')
+            };
+            
+            // Guardar los IDs de regalos confirmados (para filtrado)
+            const idsRegalosConfirmados = regalos_seleccionados.map(r => r.id);
+            guardarIdsRegalosConfirmados(idsRegalosConfirmados);
+            
+            // Guardar las confirmaciones con nombres (regalo y persona)
+            const confirmaciones = regalos_seleccionados.map(r => ({
+                nombreRegalo: r.nombre,
+                nombrePersona: nombre
+            }));
+            guardarConfirmaciones(confirmaciones);
+            
+            // Mostrar mensaje de confirmación
+            mensajeConfirmacion.classList.add('activo');
+            
+            // Deshabilitar el formulario
+            form.classList.add('form-deshabilitado');
+            inputNombre.disabled = true;
+            document.getElementById('regalo').disabled = true;
+            form.querySelector('button[type="submit"]').disabled = true;
+            
+            // Deshabilitar el botón de cerrar
+            closeModal.style.display = 'none';
+            
+            // Ocultar el botón "Presiona aquí" si existe
+            button.style.display = 'none';
+            
+            console.log('Confirmación registrada:', datos);
+            console.log('IDs de regalos confirmados (para filtrado):', idsRegalosConfirmados);
+            console.log('Confirmaciones guardadas (con nombres):', confirmaciones);
+        });
+        
+        // Inicializar cuando se carga la página
+        function inicializar() {
+            console.log('Inicializando formulario...');
+            const idsConfirmados = obtenerIdsRegalosConfirmados();
+            const confirmaciones = obtenerConfirmaciones();
+            const regalosDisponibles = obtenerRegalosDisponibles();
+            console.log('Regalos totales:', regalos.length);
+            console.log('IDs de regalos confirmados (para filtrado):', idsConfirmados.length, idsConfirmados);
+            console.log('Confirmaciones guardadas (con nombres):', confirmaciones.length, confirmaciones);
+            console.log('Regalos disponibles:', regalosDisponibles.length);
+            llenarSelectRegalos();
+            manejarSeleccionRegalo();
+            console.log('Formulario inicializado');
+        }
+        
+        // Esperar a que el DOM esté completamente cargado
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', inicializar);
+        } else {
+            // DOM ya está listo
+            inicializar();
+        }
+
+    
+    </script>
+</body>
+</html>
