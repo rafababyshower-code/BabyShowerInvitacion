@@ -411,18 +411,26 @@
         let database = null;
         let usarFirebase = false;
         
-        if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "AIzaSyDirxbiYoE4_BJllRnMVA6yl9g77xikAEI") {
+        // Verificar si Firebase está configurado (no es un placeholder)
+        const firebaseConfigurado = firebaseConfig.apiKey && 
+                                    firebaseConfig.apiKey !== "TU_API_KEY_AQUI" &&
+                                    firebaseConfig.databaseURL &&
+                                    firebaseConfig.databaseURL !== "https://TU_PROJECT_ID-default-rtdb.firebaseio.com";
+        
+        if (firebaseConfigurado) {
             try {
                 firebase.initializeApp(firebaseConfig);
                 database = firebase.database();
                 usarFirebase = true;
-                console.log('Firebase inicializado correctamente');
+                console.log('✅ Firebase inicializado correctamente');
+                console.log('📡 Sincronización en tiempo real activada');
             } catch (error) {
-                console.error('Error al inicializar Firebase:', error);
-                console.log('Usando localStorage como respaldo');
+                console.error('❌ Error al inicializar Firebase:', error);
+                console.log('⚠️ Usando localStorage como respaldo');
             }
         } else {
-            console.log('Firebase no configurado, usando localStorage');
+            console.log('⚠️ Firebase no configurado, usando localStorage');
+            console.log('💡 Los datos solo se guardarán localmente en este dispositivo');
         }
         
         const button = document.querySelector('.button');
@@ -521,14 +529,17 @@
                     const snapshot = await database.ref('regalos_confirmados').once('value');
                     const ids = snapshot.val();
                     idsRegalosConfirmadosCache = ids ? ids.map(id => Number(id)) : [];
-                    console.log('IDs de regalos confirmados cargados desde Firebase:', idsRegalosConfirmadosCache);
+                    console.log('✅ IDs de regalos confirmados cargados desde Firebase:', idsRegalosConfirmadosCache);
+                    console.log('📡 Datos sincronizados desde la nube');
                     return idsRegalosConfirmadosCache;
                 } catch (error) {
-                    console.error('Error al cargar desde Firebase:', error);
+                    console.error('❌ Error al cargar desde Firebase:', error);
+                    console.log('💾 Intentando cargar desde localStorage...');
                     // Fallback a localStorage
                     return cargarDesdeLocalStorage();
                 }
             } else {
+                console.log('💾 Cargando desde localStorage (Firebase no configurado)');
                 return cargarDesdeLocalStorage();
             }
         }
@@ -558,13 +569,22 @@
                 
                 if (usarFirebase && database) {
                     await database.ref('regalos_confirmados').set(nuevosConfirmados);
-                    console.log('IDs de regalos confirmados guardados en Firebase:', nuevosConfirmados);
+                    console.log('✅ IDs de regalos confirmados guardados en Firebase:', nuevosConfirmados);
+                    console.log('📡 Sincronización: Los cambios se verán en todos los dispositivos');
                 } else {
                     localStorage.setItem('regalos_confirmados', JSON.stringify(nuevosConfirmados));
-                    console.log('IDs de regalos confirmados guardados en localStorage:', nuevosConfirmados);
+                    console.log('💾 IDs de regalos confirmados guardados en localStorage:', nuevosConfirmados);
+                    console.log('⚠️ Solo visible en este dispositivo (Firebase no configurado)');
                 }
             } catch (error) {
-                console.error('Error al guardar IDs de regalos confirmados:', error);
+                console.error('❌ Error al guardar IDs de regalos confirmados:', error);
+                // Fallback a localStorage si Firebase falla
+                try {
+                    localStorage.setItem('regalos_confirmados', JSON.stringify(idsRegalosConfirmadosCache));
+                    console.log('💾 Guardado en localStorage como respaldo');
+                } catch (localError) {
+                    console.error('❌ Error al guardar en localStorage:', localError);
+                }
             }
         }
         
@@ -582,13 +602,16 @@
                     const snapshot = await database.ref('confirmaciones').once('value');
                     const confirmaciones = snapshot.val();
                     confirmacionesCache = confirmaciones || [];
-                    console.log('Confirmaciones cargadas desde Firebase:', confirmacionesCache);
+                    console.log('✅ Confirmaciones cargadas desde Firebase:', confirmacionesCache);
+                    console.log('📡 Datos sincronizados desde la nube');
                     return confirmacionesCache;
                 } catch (error) {
-                    console.error('Error al cargar confirmaciones desde Firebase:', error);
+                    console.error('❌ Error al cargar confirmaciones desde Firebase:', error);
+                    console.log('💾 Intentando cargar desde localStorage...');
                     return cargarConfirmacionesDesdeLocalStorage();
                 }
             } else {
+                console.log('💾 Cargando desde localStorage (Firebase no configurado)');
                 return cargarConfirmacionesDesdeLocalStorage();
             }
         }
@@ -611,13 +634,22 @@
                 
                 if (usarFirebase && database) {
                     await database.ref('confirmaciones').set(confirmacionesCache);
-                    console.log('Confirmaciones guardadas en Firebase:', confirmacionesCache);
+                    console.log('✅ Confirmaciones guardadas en Firebase:', confirmacionesCache);
+                    console.log('📡 Sincronización: Los cambios se verán en todos los dispositivos');
                 } else {
                     localStorage.setItem('confirmaciones', JSON.stringify(confirmacionesCache));
-                    console.log('Confirmaciones guardadas en localStorage:', confirmacionesCache);
+                    console.log('💾 Confirmaciones guardadas en localStorage:', confirmacionesCache);
+                    console.log('⚠️ Solo visible en este dispositivo (Firebase no configurado)');
                 }
             } catch (error) {
-                console.error('Error al guardar confirmaciones:', error);
+                console.error('❌ Error al guardar confirmaciones:', error);
+                // Fallback a localStorage si Firebase falla
+                try {
+                    localStorage.setItem('confirmaciones', JSON.stringify(confirmacionesCache));
+                    console.log('💾 Guardado en localStorage como respaldo');
+                } catch (localError) {
+                    console.error('❌ Error al guardar en localStorage:', localError);
+                }
             }
         }
         
