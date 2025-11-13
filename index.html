@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invitacion Baby shower</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -14,8 +17,12 @@
         body {
             width: 100%;
             height: 100vh;
+            height: 100dvh; /* Dynamic viewport height para Chrome iOS */
             overflow: hidden;
             background-color: #fff2ea;
+            position: fixed;
+            top: 0;
+            left: 0;
         }
         
         img {
@@ -64,10 +71,13 @@
             left: 0;
             width: 100%;
             height: 100%;
+            height: 100dvh; /* Dynamic viewport height para Chrome iOS */
             background-color: rgba(0, 0, 0, 0.5);
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .modal.active {
@@ -77,13 +87,32 @@
         .modal-content {
             background-color: #fff;
             padding: 30px;
+            padding-bottom: calc(30px + env(safe-area-inset-bottom));
             border-radius: 10px;
             max-width: 500px;
             width: 90%;
             max-height: 90vh;
+            max-height: 90dvh; /* Dynamic viewport height para Chrome iOS */
             overflow-y: auto;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             position: relative;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-content form {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+        
+        .modal-content form > *:not(button[type="submit"]):not(.mensaje-confirmacion) {
+            flex-shrink: 0;
+        }
+        
+        .modal-content form button[type="submit"] {
+            margin-top: auto;
         }
         
         .modal h2 {
@@ -120,6 +149,7 @@
             width: 100%;
             padding: 12px;
             margin-top: 20px;
+            margin-bottom: env(safe-area-inset-bottom);
             background-color: #b15f4a;
             color: #fff;
             border: none;
@@ -128,6 +158,8 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            position: relative;
+            flex-shrink: 0;
         }
         
         .modal button[type="submit"]:hover {
@@ -271,10 +303,20 @@
             }
             .button {
                 bottom: 5%;
+                bottom: calc(5% + env(safe-area-inset-bottom));
                 left: 20%;
                 width: 150px;
                 height: 30px;
                 font-size: 14px;
+            }
+            
+            .modal-content {
+                max-height: 85dvh;
+                padding-bottom: calc(30px + env(safe-area-inset-bottom));
+            }
+            
+            .modal button[type="submit"] {
+                margin-bottom: calc(20px + env(safe-area-inset-bottom));
             }
             
             .mensaje-confirmacion {
@@ -288,6 +330,24 @@
             
             .mensaje-confirmacion p {
                 font-size: 13px;
+            }
+        }
+        
+        /* Fix específico para Chrome en iOS */
+        @supports (-webkit-touch-callout: none) {
+            .modal {
+                height: -webkit-fill-available;
+            }
+            
+            body {
+                height: -webkit-fill-available;
+            }
+            
+            @media (max-width: 450px) {
+                .modal-content {
+                    max-height: 85vh;
+                    max-height: -webkit-fill-available;
+                }
             }
         }
     </style>
@@ -320,6 +380,51 @@
     </div>
 
     <script>
+        // ============================================
+        // CONFIGURACIÓN DE FIREBASE
+        // ============================================
+        // INSTRUCCIONES:
+        // 1. Ve a https://console.firebase.google.com/
+        // 2. Crea un nuevo proyecto (o usa uno existente)
+        // 3. Ve a "Realtime Database" y crea una base de datos
+        // 4. En "Configuración del proyecto" > "Tus aplicaciones" > Web
+        // 5. Copia la configuración y pégalo aquí abajo
+        // 6. En "Reglas" de Realtime Database, cambia a:
+        //    {
+        //      "rules": {
+        //        ".read": true,
+        //        ".write": true
+        //      }
+        //    }
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDirxbiYoE4_BJllRnMVA6yl9g77xikAEI",
+            authDomain: "baby-shower-regalos-6db55.firebaseapp.com",
+            databaseURL: "https://baby-shower-regalos-6db55-default-rtdb.firebaseio.com",
+            projectId: "baby-shower-regalos-6db55",
+            storageBucket: "baby-shower-regalos-6db55.firebasestorage.app",
+            messagingSenderId: "714310353905",
+            appId: "1:714310353905:web:b9d0cca17950d4be9efa50"
+          };
+        
+        // Inicializar Firebase (solo si está configurado)
+        let database = null;
+        let usarFirebase = false;
+        
+        if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "AIzaSyDirxbiYoE4_BJllRnMVA6yl9g77xikAEI") {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                database = firebase.database();
+                usarFirebase = true;
+                console.log('Firebase inicializado correctamente');
+            } catch (error) {
+                console.error('Error al inicializar Firebase:', error);
+                console.log('Usando localStorage como respaldo');
+            }
+        } else {
+            console.log('Firebase no configurado, usando localStorage');
+        }
+        
         const button = document.querySelector('.button');
         const modal = document.getElementById('modal');
         const closeModal = document.getElementById('closeModal');
@@ -403,27 +508,61 @@
         let regalos_seleccionados = [];
         
         // Funciones para manejar IDs de regalos confirmados (solo para filtrado)
+        // Usa Firebase si está disponible, sino localStorage
+        let idsRegalosConfirmadosCache = [];
+        
         function obtenerIdsRegalosConfirmados() {
+            return idsRegalosConfirmadosCache;
+        }
+        
+        async function cargarIdsRegalosConfirmados() {
+            if (usarFirebase && database) {
+                try {
+                    const snapshot = await database.ref('regalos_confirmados').once('value');
+                    const ids = snapshot.val();
+                    idsRegalosConfirmadosCache = ids ? ids.map(id => Number(id)) : [];
+                    console.log('IDs de regalos confirmados cargados desde Firebase:', idsRegalosConfirmadosCache);
+                    return idsRegalosConfirmadosCache;
+                } catch (error) {
+                    console.error('Error al cargar desde Firebase:', error);
+                    // Fallback a localStorage
+                    return cargarDesdeLocalStorage();
+                }
+            } else {
+                return cargarDesdeLocalStorage();
+            }
+        }
+        
+        function cargarDesdeLocalStorage() {
             try {
                 const confirmados = localStorage.getItem('regalos_confirmados');
-                if (!confirmados) return [];
-                // Convertir todos los IDs a números para comparación correcta
+                if (!confirmados) {
+                    idsRegalosConfirmadosCache = [];
+                    return [];
+                }
                 const ids = JSON.parse(confirmados);
-                return ids.map(id => Number(id));
+                idsRegalosConfirmadosCache = ids.map(id => Number(id));
+                return idsRegalosConfirmadosCache;
             } catch (error) {
                 console.error('Error al obtener IDs de regalos confirmados:', error);
+                idsRegalosConfirmadosCache = [];
                 return [];
             }
         }
         
-        function guardarIdsRegalosConfirmados(idsRegalos) {
+        async function guardarIdsRegalosConfirmados(idsRegalos) {
             try {
-                const confirmadosActuales = obtenerIdsRegalosConfirmados();
-                // Convertir todos los IDs a números y agregar los nuevos sin duplicados
                 const idsNumericos = idsRegalos.map(id => Number(id));
-                const nuevosConfirmados = [...new Set([...confirmadosActuales, ...idsNumericos])];
-                localStorage.setItem('regalos_confirmados', JSON.stringify(nuevosConfirmados));
-                console.log('IDs de regalos confirmados guardados:', nuevosConfirmados);
+                const nuevosConfirmados = [...new Set([...idsRegalosConfirmadosCache, ...idsNumericos])];
+                idsRegalosConfirmadosCache = nuevosConfirmados;
+                
+                if (usarFirebase && database) {
+                    await database.ref('regalos_confirmados').set(nuevosConfirmados);
+                    console.log('IDs de regalos confirmados guardados en Firebase:', nuevosConfirmados);
+                } else {
+                    localStorage.setItem('regalos_confirmados', JSON.stringify(nuevosConfirmados));
+                    console.log('IDs de regalos confirmados guardados en localStorage:', nuevosConfirmados);
+                }
             } catch (error) {
                 console.error('Error al guardar IDs de regalos confirmados:', error);
             }
@@ -431,28 +570,228 @@
         
         // Funciones para manejar confirmaciones con nombres (regalo y persona)
         // Estructura: [{nombreRegalo: "Body de manga corta", nombrePersona: "Juan Pérez"}, ...]
+        let confirmacionesCache = [];
+        
         function obtenerConfirmaciones() {
+            return confirmacionesCache;
+        }
+        
+        async function cargarConfirmaciones() {
+            if (usarFirebase && database) {
+                try {
+                    const snapshot = await database.ref('confirmaciones').once('value');
+                    const confirmaciones = snapshot.val();
+                    confirmacionesCache = confirmaciones || [];
+                    console.log('Confirmaciones cargadas desde Firebase:', confirmacionesCache);
+                    return confirmacionesCache;
+                } catch (error) {
+                    console.error('Error al cargar confirmaciones desde Firebase:', error);
+                    return cargarConfirmacionesDesdeLocalStorage();
+                }
+            } else {
+                return cargarConfirmacionesDesdeLocalStorage();
+            }
+        }
+        
+        function cargarConfirmacionesDesdeLocalStorage() {
             try {
                 const confirmaciones = localStorage.getItem('confirmaciones');
-                if (!confirmaciones) return [];
-                return JSON.parse(confirmaciones);
+                confirmacionesCache = confirmaciones ? JSON.parse(confirmaciones) : [];
+                return confirmacionesCache;
             } catch (error) {
                 console.error('Error al obtener confirmaciones:', error);
+                confirmacionesCache = [];
                 return [];
             }
         }
         
-        function guardarConfirmaciones(nuevasConfirmaciones) {
+        async function guardarConfirmaciones(nuevasConfirmaciones) {
             try {
-                // nuevasConfirmaciones es un array de objetos: [{nombreRegalo: "...", nombrePersona: "..."}]
-                const confirmacionesActuales = obtenerConfirmaciones();
-                const todasConfirmaciones = [...confirmacionesActuales, ...nuevasConfirmaciones];
-                localStorage.setItem('confirmaciones', JSON.stringify(todasConfirmaciones));
-                console.log('Confirmaciones guardadas:', todasConfirmaciones);
+                confirmacionesCache = [...confirmacionesCache, ...nuevasConfirmaciones];
+                
+                if (usarFirebase && database) {
+                    await database.ref('confirmaciones').set(confirmacionesCache);
+                    console.log('Confirmaciones guardadas en Firebase:', confirmacionesCache);
+                } else {
+                    localStorage.setItem('confirmaciones', JSON.stringify(confirmacionesCache));
+                    console.log('Confirmaciones guardadas en localStorage:', confirmacionesCache);
+                }
             } catch (error) {
                 console.error('Error al guardar confirmaciones:', error);
             }
         }
+        
+        // Escuchar cambios en Firebase en tiempo real
+        function configurarEscuchaFirebase() {
+            if (usarFirebase && database) {
+                // Escuchar cambios en regalos confirmados
+                database.ref('regalos_confirmados').on('value', (snapshot) => {
+                    const ids = snapshot.val();
+                    idsRegalosConfirmadosCache = ids ? ids.map(id => Number(id)) : [];
+                    console.log('IDs actualizados desde Firebase:', idsRegalosConfirmadosCache);
+                    // Actualizar el select cuando cambien los datos
+                    llenarSelectRegalos();
+                });
+                
+                // Escuchar cambios en confirmaciones
+                database.ref('confirmaciones').on('value', (snapshot) => {
+                    const confirmaciones = snapshot.val();
+                    confirmacionesCache = confirmaciones || [];
+                    console.log('Confirmaciones actualizadas desde Firebase:', confirmacionesCache);
+                });
+            }
+        }
+        
+        // ============================================
+        // FUNCIONES DE ADMINISTRACIÓN
+        // ============================================
+        // Estas funciones se pueden ejecutar desde la consola del navegador (F12)
+        
+        // Eliminar un regalo específico por ID (para que vuelva a estar disponible)
+        async function eliminarRegaloConfirmado(idRegalo) {
+            const id = Number(idRegalo);
+            if (!id || isNaN(id)) {
+                console.error('ID inválido. Usa: eliminarRegaloConfirmado(5)');
+                return;
+            }
+            
+            // Eliminar de la lista de IDs confirmados
+            const nuevosIds = idsRegalosConfirmadosCache.filter(regaloId => regaloId !== id);
+            idsRegalosConfirmadosCache = nuevosIds;
+            
+            if (usarFirebase && database) {
+                try {
+                    await database.ref('regalos_confirmados').set(nuevosIds);
+                    console.log('Regalo eliminado de Firebase. ID:', id);
+                } catch (error) {
+                    console.error('Error al eliminar de Firebase:', error);
+                }
+            } else {
+                localStorage.setItem('regalos_confirmados', JSON.stringify(nuevosIds));
+                console.log('Regalo eliminado de localStorage. ID:', id);
+            }
+            
+            // Eliminar las confirmaciones relacionadas con este regalo
+            const regalo = regalos.find(r => r.id === id);
+            if (regalo) {
+                const nuevasConfirmaciones = confirmacionesCache.filter(conf => 
+                    conf.nombreRegalo !== regalo.nombre
+                );
+                confirmacionesCache = nuevasConfirmaciones;
+                
+                if (usarFirebase && database) {
+                    try {
+                        await database.ref('confirmaciones').set(nuevasConfirmaciones);
+                    } catch (error) {
+                        console.error('Error al actualizar confirmaciones:', error);
+                    }
+                } else {
+                    localStorage.setItem('confirmaciones', JSON.stringify(nuevasConfirmaciones));
+                }
+            }
+            
+            // Actualizar el select
+            llenarSelectRegalos();
+            console.log('✅ Regalo ID', id, 'eliminado. Ahora está disponible nuevamente.');
+        }
+        
+        // Ver todas las confirmaciones
+        function verConfirmaciones() {
+            console.log('=== CONFIRMACIONES ===');
+            console.table(confirmacionesCache);
+            console.log('Total:', confirmacionesCache.length);
+            return confirmacionesCache;
+        }
+        
+        // Ver IDs de regalos confirmados
+        function verRegalosConfirmados() {
+            console.log('=== REGALOS CONFIRMADOS (IDs) ===');
+            console.log(idsRegalosConfirmadosCache);
+            console.log('Total:', idsRegalosConfirmadosCache.length);
+            
+            // Mostrar también los nombres de los regalos
+            const regalosConfirmadosConNombre = idsRegalosConfirmadosCache.map(id => {
+                const regalo = regalos.find(r => r.id === id);
+                return { id: id, nombre: regalo ? regalo.nombre : 'No encontrado' };
+            });
+            console.table(regalosConfirmadosConNombre);
+            return idsRegalosConfirmadosCache;
+        }
+        
+        // Resetear todo (eliminar todas las confirmaciones)
+        async function resetearTodo() {
+            if (!confirm('¿Estás seguro de que quieres eliminar TODAS las confirmaciones? Esto no se puede deshacer.')) {
+                return;
+            }
+            
+            idsRegalosConfirmadosCache = [];
+            confirmacionesCache = [];
+            
+            if (usarFirebase && database) {
+                try {
+                    await database.ref('regalos_confirmados').set([]);
+                    await database.ref('confirmaciones').set([]);
+                    console.log('✅ Todo reseteado en Firebase');
+                } catch (error) {
+                    console.error('Error al resetear en Firebase:', error);
+                }
+            } else {
+                localStorage.removeItem('regalos_confirmados');
+                localStorage.removeItem('confirmaciones');
+                console.log('✅ Todo reseteado en localStorage');
+            }
+            
+            // Actualizar el select
+            llenarSelectRegalos();
+            console.log('✅ Todos los regalos están disponibles nuevamente');
+        }
+        
+        // Eliminar confirmación por nombre de persona
+        async function eliminarConfirmacionesPorPersona(nombrePersona) {
+            if (!nombrePersona) {
+                console.error('Debes proporcionar un nombre. Usa: eliminarConfirmacionesPorPersona("Juan Pérez")');
+                return;
+            }
+            
+            // Encontrar los regalos confirmados por esta persona
+            const confirmacionesPersona = confirmacionesCache.filter(conf => 
+                conf.nombrePersona.toLowerCase() === nombrePersona.toLowerCase()
+            );
+            
+            if (confirmacionesPersona.length === 0) {
+                console.log('No se encontraron confirmaciones para:', nombrePersona);
+                return;
+            }
+            
+            console.log('Confirmaciones encontradas:', confirmacionesPersona);
+            
+            // Obtener los IDs de los regalos a eliminar
+            const idsAEliminar = confirmacionesPersona.map(conf => {
+                const regalo = regalos.find(r => r.nombre === conf.nombreRegalo);
+                return regalo ? regalo.id : null;
+            }).filter(id => id !== null);
+            
+            // Eliminar cada regalo
+            for (const id of idsAEliminar) {
+                await eliminarRegaloConfirmado(id);
+            }
+            
+            console.log('✅ Confirmaciones de', nombrePersona, 'eliminadas');
+        }
+        
+        // Hacer funciones disponibles globalmente para uso desde consola
+        window.eliminarRegaloConfirmado = eliminarRegaloConfirmado;
+        window.verConfirmaciones = verConfirmaciones;
+        window.verRegalosConfirmados = verRegalosConfirmados;
+        window.resetearTodo = resetearTodo;
+        window.eliminarConfirmacionesPorPersona = eliminarConfirmacionesPorPersona;
+        
+        console.log('🔧 Funciones de administración disponibles:');
+        console.log('  - eliminarRegaloConfirmado(id) - Elimina un regalo por ID');
+        console.log('  - verConfirmaciones() - Muestra todas las confirmaciones');
+        console.log('  - verRegalosConfirmados() - Muestra los IDs confirmados');
+        console.log('  - resetearTodo() - Elimina todas las confirmaciones');
+        console.log('  - eliminarConfirmacionesPorPersona("nombre") - Elimina confirmaciones de una persona');
         
         // Función para obtener regalos disponibles (excluyendo los confirmados)
         function obtenerRegalosDisponibles() {
@@ -596,8 +935,19 @@
         }
         
         // Event listener para abrir el modal
-        button.addEventListener('click', function() {
+        button.addEventListener('click', async function() {
             modal.classList.add('active');
+            
+            // Fix para Chrome iOS: forzar recálculo del viewport
+            setTimeout(() => {
+                const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+                modal.style.height = viewportHeight + 'px';
+                // Forzar reflow
+                void modal.offsetHeight;
+            }, 100);
+            
+            // Recargar datos desde Firebase/localStorage cuando se abre el modal
+            await cargarIdsRegalosConfirmados();
             // Asegurar que el select esté habilitado
             const selectRegalo = document.getElementById('regalo');
             if (selectRegalo) {
@@ -625,7 +975,7 @@
         const mensajeConfirmacion = document.getElementById('mensajeConfirmacion');
         const inputNombre = document.getElementById('nombre');
         
-        form.addEventListener('submit', function(e) {
+        form.addEventListener('submit', async function(e) {
             e.preventDefault(); // Prevenir envío por defecto
             
             const nombre = inputNombre.value.trim();
@@ -651,14 +1001,14 @@
             
             // Guardar los IDs de regalos confirmados (para filtrado)
             const idsRegalosConfirmados = regalos_seleccionados.map(r => r.id);
-            guardarIdsRegalosConfirmados(idsRegalosConfirmados);
+            await guardarIdsRegalosConfirmados(idsRegalosConfirmados);
             
             // Guardar las confirmaciones con nombres (regalo y persona)
             const confirmaciones = regalos_seleccionados.map(r => ({
                 nombreRegalo: r.nombre,
                 nombrePersona: nombre
             }));
-            guardarConfirmaciones(confirmaciones);
+            await guardarConfirmaciones(confirmaciones);
             
             // Mostrar mensaje de confirmación
             mensajeConfirmacion.classList.add('activo');
@@ -680,16 +1030,49 @@
             console.log('Confirmaciones guardadas (con nombres):', confirmaciones);
         });
         
+        // Función para ajustar el viewport en Chrome iOS
+        function ajustarViewport() {
+            if (modal.classList.contains('active')) {
+                const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+                modal.style.height = viewportHeight + 'px';
+            }
+        }
+        
+        // Listener para ajustar viewport cuando cambia el tamaño (útil cuando aparece/desaparece el teclado)
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(ajustarViewport, 100);
+        });
+        
+        // También ajustar cuando se hace scroll (Chrome iOS puede cambiar el viewport al hacer scroll)
+        window.addEventListener('scroll', function() {
+            if (modal.classList.contains('active')) {
+                ajustarViewport();
+            }
+        }, { passive: true });
+        
         // Inicializar cuando se carga la página
-        function inicializar() {
+        async function inicializar() {
             console.log('Inicializando formulario...');
+            
+            // Cargar datos desde Firebase o localStorage
+            await cargarIdsRegalosConfirmados();
+            await cargarConfirmaciones();
+            
+            // Configurar escucha en tiempo real si se usa Firebase
+            configurarEscuchaFirebase();
+            
             const idsConfirmados = obtenerIdsRegalosConfirmados();
             const confirmaciones = obtenerConfirmaciones();
             const regalosDisponibles = obtenerRegalosDisponibles();
+            
             console.log('Regalos totales:', regalos.length);
             console.log('IDs de regalos confirmados (para filtrado):', idsConfirmados.length, idsConfirmados);
             console.log('Confirmaciones guardadas (con nombres):', confirmaciones.length, confirmaciones);
             console.log('Regalos disponibles:', regalosDisponibles.length);
+            console.log('Usando Firebase:', usarFirebase ? 'Sí' : 'No (localStorage)');
+            
             llenarSelectRegalos();
             manejarSeleccionRegalo();
             console.log('Formulario inicializado');
